@@ -27,8 +27,8 @@ model = load_model()
 # -----------------------------
 def download_youtube_audio(url, output_path, cookiefile=None):
     ydl_opts = {
-        # Vários fallbacks: alguns vídeos não têm bestaudio; "best" permite extrair áudio depois
-        "format": "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best/best",
+        # "best" aceita qualquer formato disponível; FFmpegExtractAudio extrai o áudio para mp3
+        "format": "best",
         "outtmpl": output_path,
         "postprocessors": [
             {
