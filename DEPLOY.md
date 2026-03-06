@@ -21,6 +21,7 @@
 | Variável | Descrição |
 |----------|-----------|
 | `STREAMLIT_SERVER_PORT` | Porta do Streamlit (padrão: 8501). |
+| `YT_COOKIES_FILE` | Caminho para arquivo de cookies do YouTube (ex.: `/app/cookies.txt`). Use se o YouTube bloquear com "Sign in to confirm you're not a bot". No Coolify, monte um volume com o arquivo e defina este path. |
 
 ## Observações
 

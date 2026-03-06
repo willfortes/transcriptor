@@ -25,7 +25,7 @@ model = load_model()
 # -----------------------------
 # YOUTUBE DOWNLOAD FUNCTION
 # -----------------------------
-def download_youtube_audio(url, output_path):
+def download_youtube_audio(url, output_path, cookiefile=None):
     ydl_opts = {
         "format": "bestaudio/best",
         "outtmpl": output_path,
@@ -36,7 +36,12 @@ def download_youtube_audio(url, output_path):
                 "preferredquality": "192",
             }
         ],
+        # Reduz bloqueio "Sign in to confirm you're not a bot" (IPs de datacenter)
+        "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
+        "quiet": True,
     }
+    if cookiefile and os.path.isfile(cookiefile):
+        ydl_opts["cookiefile"] = cookiefile
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
@@ -85,24 +90,52 @@ with tab1:
 # TAB 2 - YOUTUBE
 # -----------------------------
 with tab2:
-    youtube_url = st.text_input("Paste YouTube URL")
+    youtube_url = st.text_input("Cole a URL do YouTube")
+
+    with st.expander("Se o YouTube pedir login (anti-bot): usar cookies"):
+        st.caption("Exporte os cookies do YouTube no seu navegador (extensão ou yt-dlp) e envie aqui.")
+        cookies_file_upload = st.file_uploader("Arquivo cookies.txt (opcional)", type=["txt"], key="yt_cookies")
 
     if st.button("Download & Transcribe"):
         if youtube_url:
-            with tempfile.TemporaryDirectory() as tmp_dir:
-                output_template = os.path.join(tmp_dir, "%(title)s.%(ext)s")
+            cookiefile = os.environ.get("YT_COOKIES_FILE")
+            cookie_temp_path = None
+            if cookies_file_upload:
+                with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".txt") as cf:
+                    cf.write(cookies_file_upload.read())
+                    cookie_temp_path = cf.name
+                    cookiefile = cookie_temp_path
 
-                with st.spinner("Downloading audio..."):
-                    download_youtube_audio(youtube_url, output_template)
+            try:
+                with tempfile.TemporaryDirectory() as tmp_dir:
+                    output_template = os.path.join(tmp_dir, "%(title)s.%(ext)s")
 
-                files = os.listdir(tmp_dir)
-                audio_path = os.path.join(tmp_dir, files[0])
+                    with st.spinner("Baixando áudio..."):
+                        download_youtube_audio(youtube_url, output_template, cookiefile=cookiefile)
 
-                with st.spinner("Transcribing..."):
-                    text = transcribe(audio_path)
-                    st.session_state.transcription_text = text
+                    files = [f for f in os.listdir(tmp_dir) if not f.endswith(".part")]
+                    if not files:
+                        st.error("Nenhum áudio baixado. Tente usar cookies (expandir acima) ou outro vídeo.")
+                    else:
+                        audio_path = os.path.join(tmp_dir, files[0])
 
-                st.success("Transcription complete!")
+                        with st.spinner("Transcrevendo..."):
+                            text = transcribe(audio_path)
+                            st.session_state.transcription_text = text
+
+                        st.success("Transcrição concluída!")
+            except Exception as e:
+                err = str(e)
+                if "Sign in" in err or "bot" in err.lower() or "cookies" in err.lower():
+                    st.error("YouTube bloqueou o acesso. Use a opção de cookies acima (exporte do seu navegador).")
+                else:
+                    st.error(f"Erro: {err}")
+            finally:
+                if cookie_temp_path and os.path.isfile(cookie_temp_path):
+                    try:
+                        os.unlink(cookie_temp_path)
+                    except Exception:
+                        pass
 
 # -----------------------------
 # TRANSCRIPTION OUTPUT AREA
