@@ -27,8 +27,9 @@ model = load_model()
 # -----------------------------
 def download_youtube_audio(url, output_path, cookiefile=None):
     ydl_opts = {
-        # "best" aceita qualquer formato disponível; FFmpegExtractAudio extrai o áudio para mp3
-        "format": "best",
+        # Fallbacks explícitos: 18 (vídeo+áudio), 139/140 (m4a), 249-251 (opus), depois best
+        # (evita "Requested format is not available" no Docker/Coolify onde android client limita formatos)
+        "format": "18/139/140/249/250/251/bestaudio/best",
         "outtmpl": output_path,
         "postprocessors": [
             {
@@ -37,8 +38,6 @@ def download_youtube_audio(url, output_path, cookiefile=None):
                 "preferredquality": "192",
             }
         ],
-        # Reduz bloqueio "Sign in to confirm you're not a bot" (IPs de datacenter)
-        "extractor_args": {"youtube": {"player_client": ["android", "web"]}},
         "quiet": True,
     }
     if cookiefile and os.path.isfile(cookiefile):
