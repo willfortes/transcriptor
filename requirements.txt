@@ -1,0 +1,6 @@
+streamlit
+openai-whisper
+yt-dlp
+torch
+ffmpeg-python
+st_copy_to_clipboard
