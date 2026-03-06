@@ -1,6 +1,6 @@
+# torch instalado no Dockerfile via index CPU-only (menor e mais estável)
 streamlit
 openai-whisper
 yt-dlp
-torch
 ffmpeg-python
 st_copy_to_clipboard
